@@ -2,7 +2,7 @@
 
 'use strict';
 
-var bootlint = require('../src/bootlint.js');
+var bootlint = (process.env.BOOTLINT_COV === '1') ? require('../src-cov/bootlint.js') : require('../src/bootlint.js');
 var fs = require('fs');
 var path = require('path');
 
@@ -75,10 +75,10 @@ exports.bootlint = {
             [],
             'should not complain when UTF-8 charset <meta> tag is present.');
         test.deepEqual(lintHtml(utf8Fixture('charset/missing.html')),
-            ['<head> is missing UTF-8 charset <meta> tag'],
+            ['`<head>` is missing UTF-8 charset `<meta>` tag'],
             'should complain when charset <meta> tag is missing.');
         test.deepEqual(lintHtml(utf16Fixture('charset/not-utf8.html')),
-            ['charset <meta> tag is specifying a legacy, non-UTF-8 charset'],
+            ['charset `<meta>` tag is specifying a legacy, non-UTF-8 charset'],
             'should complain when <meta> tag specifies non-UTF-8 charset.');
         test.done();
     },
@@ -88,7 +88,7 @@ exports.bootlint = {
             [],
             'should not complain when X-UA-Compatible <meta> tag is present.');
         test.deepEqual(lintHtml(utf8Fixture('x-ua-compatible/missing.html')),
-            ["<head> is missing X-UA-Compatible <meta> tag that disables old IE compatibility modes"],
+            ["`<head>` is missing X-UA-Compatible `<meta>` tag that disables old IE compatibility modes"],
             'should complain when X-UA-Compatible <meta> tag is missing.');
         test.done();
     },
@@ -97,7 +97,7 @@ exports.bootlint = {
         test.deepEqual(lintHtml(utf8Fixture('bs-v2.html')),
             [
                 "Found one or more uses of outdated Bootstrap v2 `.spanN` grid classes",
-                "Only columns (.col-*-*) may be children of `.row`s"
+                "Only columns (`.col-*-*`) may be children of `.row`s"
             ],
             'should complain when Bootstrap v2 grid classes are present.');
         test.done();
@@ -143,16 +143,16 @@ exports.bootlint = {
             [],
             'should not complain when viewport <meta> tag is present');
         test.deepEqual(lintHtml(utf8Fixture('viewport/missing.html')),
-            ["<head> is missing viewport <meta> tag that enables responsiveness"],
+            ["`<head>` is missing viewport `<meta>` tag that enables responsiveness"],
             'should complain when viewport <meta> tag is missing.');
         test.done();
     },
     'row and column classes on same element': function (test) {
         test.expect(1);
-        test.deepEqual(lintHtml(utf8Fixture('row-col-same-elem.html')),
+        test.deepEqual(lintHtml(utf8Fixture('grid/row-col-same-elem.html')),
             [
                 "Found both `.row` and `.col-*-*` used on the same element",
-                'Columns (.col-*-*) can only be children of `.row`s or `.form-group`s'
+                'Columns (`.col-*-*`) can only be children of `.row`s or `.form-group`s'
             ],
             'should complain when .row and .col-*-* are used on the same element.');
         test.done();
@@ -169,16 +169,22 @@ exports.bootlint = {
     },
     'remote modals': function (test) {
         test.expect(1);
-        test.deepEqual(lintHtml(utf8Fixture('modal-remote.html')),
+        test.deepEqual(lintHtml(utf8Fixture('modal/remote.html')),
             ["Found one or more modals using the deprecated `remote` option"],
             'should complain when remote modals are present.');
         test.done();
     },
     'jQuery': function (test) {
-        test.expect(2);
+        test.expect(4);
         test.deepEqual(lintHtml(utf8Fixture('jquery/present.html')),
             [],
             'should not complain when jQuery is present.');
+        test.deepEqual(lintHtml(utf8Fixture('jquery/jquery-plugin.html')),
+            [],
+            'should not complain when jQuery & a plugin is present.');
+        test.deepEqual(lintHtml(utf8Fixture('jquery/old-url.html')),
+            ["Found what might be an outdated version of jQuery; Bootstrap requires jQuery v1.9.1 or higher"],
+            'should complain about old version of jQuery based on URL');
         test.deepEqual(lintHtml(utf8Fixture('jquery/missing.html')),
             ["Unable to locate jQuery, which is required for Bootstrap's JavaScript plugins to work"],
             'should complain when jQuery appears to be missing.');
@@ -203,10 +209,10 @@ exports.bootlint = {
     'input groups with impermissible kind of form control': function (test) {
         test.expect(3);
         test.deepEqual(lintHtml(utf8Fixture('input-group/textarea.html')),
-            ["`.input-group` contains a <textarea>; only text-based <input>s are permitted in an `.input-group`"],
+            ["`.input-group` contains a `<textarea>`; only text-based `<input>`s are permitted in an `.input-group`"],
             'should complain about input groups with a <textarea> form control');
         test.deepEqual(lintHtml(utf8Fixture('input-group/select.html')),
-            ["`.input-group` contains a <select>; this should be avoided as <select>s cannot be fully styled in WebKit browsers"],
+            ["`.input-group` contains a `<select>`; this should be avoided as `<select>`s cannot be fully styled in WebKit browsers"],
             'should complain about input groups with a <select> form control');
         test.deepEqual(lintHtml(utf8Fixture('input-group/valid.html')),
             [],
@@ -218,7 +224,7 @@ exports.bootlint = {
         test.deepEqual(lintHtml(utf8Fixture('tooltips/on-disabled-elems.html')),
             ["Tooltips and popovers on disabled elements cannot be triggered by user interaction unless the element becomes enabled." +
             " To have tooltips and popovers be triggerable by the user even when their associated element is disabled," +
-            " put the disabled element inside a wrapper <div> and apply the tooltip or popover to the wrapper <div> instead."],
+            " put the disabled element inside a wrapper `<div>` and apply the tooltip or popover to the wrapper `<div>` instead."],
             'should complain about tooltips and popovers on disabled elements.');
         test.done();
     },
@@ -246,21 +252,21 @@ exports.bootlint = {
     'mixing input groups with form groups': function (test) {
         test.expect(1);
         test.deepEqual(lintHtml(utf8Fixture('input-group/mixed-with-form-group.html')),
-            [".input-group and .form-group cannot be used directly on the same element. Instead, nest the .input-group within the .form-group"],
+            ["`.input-group` and `.form-group` cannot be used directly on the same element. Instead, nest the `.input-group` within the `.form-group`"],
             'should complain when .input-group and .form-group are used on the same element.');
         test.done();
     },
     'mixing input groups with grid columns': function (test) {
         test.expect(1);
         test.deepEqual(lintHtml(utf8Fixture('input-group/mixed-with-grid-col.html')),
-            [".input-group and .col-*-* cannot be used directly on the same element. Instead, nest the .input-group within the .col-*-*"],
+            ["`.input-group` and `.col-*-*` cannot be used directly on the same element. Instead, nest the `.input-group` within the `.col-*-*`"],
             'should complain when an input group has a grid column class on it.');
         test.done();
     },
     'non-column children of rows': function (test) {
         test.expect(1);
-        test.deepEqual(lintHtml(utf8Fixture('non-col-row-children.html')),
-            ["Only columns (.col-*-*) may be children of `.row`s"],
+        test.deepEqual(lintHtml(utf8Fixture('grid/non-col-row-children.html')),
+            ["Only columns (`.col-*-*`) may be children of `.row`s"],
             'should complain when rows have non-column children.');
         test.done();
     },
@@ -281,6 +287,16 @@ exports.bootlint = {
         test.deepEqual(lintHtml(utf8Fixture('input-group/multiple-mixed-add-on-left.html')),
             ["Having multiple add-ons on a single side of an input group is not supported"],
             'should complain when both a normal add-on and a button add-on are on the left side of an input group.');
+        test.done();
+    },
+    'multiple buttons/dropdowns inside input-group-btn': function (test) {
+        test.expect(2);
+        test.deepEqual(lintHtml(utf8Fixture('input-group/multiple-btns-group.html')),
+            ["Having multiple `.btn`s inside of a single `.input-group-btn` is not supported"],
+            'should complain about multiple buttons being inside a single input-group-btn');
+        test.deepEqual(lintHtml(utf8Fixture('input-group/multiple-dropdowns-in-group.html')),
+            ["Having multiple `.dropdown-menu`s inside of a single `.input-group-btn` is not supported"],
+            'should complain about multiple dropdowns being inside a single input-group-btn');
         test.done();
     },
     'dropdown-toggle comes before btn': function (test) {
@@ -318,10 +334,10 @@ exports.bootlint = {
             'should complain when invalid .radio markup is used.');
 
         test.deepEqual(lintHtml(utf8Fixture('checkboxes-radios/checkbox-inline-non-label.html')),
-            [".checkbox-inline should only be used on <label> elements"],
+            ["`.checkbox-inline` should only be used on `<label>` elements"],
             'should complain when .checkbox-inline is used on a non-<label> element.');
         test.deepEqual(lintHtml(utf8Fixture('checkboxes-radios/radio-inline-non-label.html')),
-            [".radio-inline should only be used on <label> elements"],
+            ["`.radio-inline` should only be used on `<label>` elements"],
             'should complain when .radio-inline is used on a non-<label> element.');
 
         test.deepEqual(lintHtml(utf8Fixture('checkboxes-radios/checkbox-inline-bad-structure.html')),
@@ -340,10 +356,10 @@ exports.bootlint = {
             [],
             'should not complain when .active and checked correspond correctly.');
         test.deepEqual(lintHtml(utf8Fixture('buttons-plugin/checkbox-bad.html')),
-            [".active class used without the `checked` attribute (or vice-versa) in a button group using the button.js plugin"],
+            ["`.active` class used without the `checked` attribute (or vice-versa) in a button group using the button.js plugin"],
             'should complain when .active and checked do not correspond correctly in a checkbox button group.');
         test.deepEqual(lintHtml(utf8Fixture('buttons-plugin/radio-bad.html')),
-            [".active class used without the `checked` attribute (or vice-versa) in a button group using the button.js plugin"],
+            ["`.active` class used without the `checked` attribute (or vice-versa) in a button group using the button.js plugin"],
             'should complain when .active and checked do not correspond correctly in a radio button group.');
         test.done();
     },
@@ -386,7 +402,7 @@ exports.bootlint = {
             'should not complain when columns are within a form group.'
         );
         test.deepEqual(lintHtml(utf8Fixture('grid/cols-outside-row-and-form-group.html')),
-            ["Columns (.col-*-*) can only be children of `.row`s or `.form-group`s"],
+            ["Columns (`.col-*-*`) can only be children of `.row`s or `.form-group`s"],
             'should complain when columns are outside of rows and form groups.'
         );
         test.done();
@@ -399,7 +415,7 @@ exports.bootlint = {
             'should not complain when .table-responsive is used on the table\'s wrapper div.'
         );
         test.deepEqual(lintHtml(utf8Fixture('table/responsive-incorrect.html')),
-            ["`.table-responsive` is supposed to be used on the table's parent wrapper <div>, not on the table itself"],
+            ["`.table-responsive` is supposed to be used on the table's parent wrapper `<div>`, not on the table itself"],
             'should complain when .table-responsive is used on the table itself.'
         );
         test.done();
@@ -413,14 +429,55 @@ exports.bootlint = {
         );
         test.deepEqual(lintHtml(utf8Fixture('grid/cols-redundant.html')),
             [
-                'Since grid classes apply to devices with screen widths greater than or equal to the breakpoint sizes (unless overridden by grid classes targeting larger screens), class="abc col-xs-2 def col-sm-1 ghi col-md-1 jkl col-lg-1" is redundant and can be simplified to class="abc def ghi jkl col-xs-2 col-sm-1"',
-                'Since grid classes apply to devices with screen widths greater than or equal to the breakpoint sizes (unless overridden by grid classes targeting larger screens), class="col-xs-10 abc col-sm-10 def col-md-10 ghi col-lg-12 jkl" is redundant and can be simplified to class="abc def ghi jkl col-xs-10 col-lg-12"',
-                'Since grid classes apply to devices with screen widths greater than or equal to the breakpoint sizes (unless overridden by grid classes targeting larger screens), class="col-xs-6 col-sm-6 col-md-6 col-lg-6" is redundant and can be simplified to class="col-xs-6"',
-                'Since grid classes apply to devices with screen widths greater than or equal to the breakpoint sizes (unless overridden by grid classes targeting larger screens), class="col-xs-5 col-sm-5" is redundant and can be simplified to class="col-xs-5"',
-                'Since grid classes apply to devices with screen widths greater than or equal to the breakpoint sizes (unless overridden by grid classes targeting larger screens), class="col-sm-4 col-md-4" is redundant and can be simplified to class="col-sm-4"',
-                'Since grid classes apply to devices with screen widths greater than or equal to the breakpoint sizes (unless overridden by grid classes targeting larger screens), class="col-md-3 col-lg-3" is redundant and can be simplified to class="col-md-3"'
+                'Since grid classes apply to devices with screen widths greater than or equal to the breakpoint sizes (unless overridden by grid classes targeting larger screens), `class="abc col-xs-2 def col-sm-1 ghi col-md-1 jkl col-lg-1"` is redundant and can be simplified to `class="abc def ghi jkl col-xs-2 col-sm-1"`',
+                'Since grid classes apply to devices with screen widths greater than or equal to the breakpoint sizes (unless overridden by grid classes targeting larger screens), `class="col-xs-10 abc col-sm-10 def col-md-10 ghi col-lg-12 jkl"` is redundant and can be simplified to `class="abc def ghi jkl col-xs-10 col-lg-12"`',
+                'Since grid classes apply to devices with screen widths greater than or equal to the breakpoint sizes (unless overridden by grid classes targeting larger screens), `class="col-xs-6 col-sm-6 col-md-6 col-lg-6"` is redundant and can be simplified to `class="col-xs-6"`',
+                'Since grid classes apply to devices with screen widths greater than or equal to the breakpoint sizes (unless overridden by grid classes targeting larger screens), `class="col-xs-5 col-sm-5"` is redundant and can be simplified to `class="col-xs-5"`',
+                'Since grid classes apply to devices with screen widths greater than or equal to the breakpoint sizes (unless overridden by grid classes targeting larger screens), `class="col-sm-4 col-md-4"` is redundant and can be simplified to `class="col-sm-4"`',
+                'Since grid classes apply to devices with screen widths greater than or equal to the breakpoint sizes (unless overridden by grid classes targeting larger screens), `class="col-md-3 col-lg-3"` is redundant and can be simplified to `class="col-md-3"`'
             ],
             'should complain when there are redundant grid column classes.'
+        );
+        test.done();
+    },
+
+    'empty spacer grid columns': function (test) {
+        test.expect(9);
+        test.deepEqual(lintHtml(utf8Fixture('grid/spacer-col/blank-text.html')),
+            ['Using empty spacer columns isn\'t necessary with Bootstrap\'s grid. So instead of having an empty grid column with `class="col-xs-11"` , just add `class="col-xs-offset-11"` to the next grid column.'],
+            'should complain when spacer column contains only whitespace text content.'
+        );
+        test.deepEqual(lintHtml(utf8Fixture('grid/spacer-col/non-blank-text.html')),
+            [],
+            'should not complain when spacer-like column contains non-whitespace-only text content.'
+        );
+        test.deepEqual(lintHtml(utf8Fixture('grid/spacer-col/child-with-text.html')),
+            [],
+            'should not complain when spacer-like column contains child with text content.'
+        );
+        test.deepEqual(lintHtml(utf8Fixture('grid/spacer-col/child-without-text.html')),
+            [],
+            'should not complain when spacer-like column contains child element without text content.'
+        );
+        test.deepEqual(lintHtml(utf8Fixture('grid/spacer-col/no-child-no-text.html')),
+            ['Using empty spacer columns isn\'t necessary with Bootstrap\'s grid. So instead of having an empty grid column with `class="col-xs-11"` , just add `class="col-xs-offset-11"` to the next grid column.'],
+            'should complain when spacer column is completely empty.'
+        );
+        test.deepEqual(lintHtml(utf8Fixture('grid/spacer-col/col-element.html')),
+            [],
+            'should not complain about <col> elements with grid column classes.'
+        );
+        test.deepEqual(lintHtml(utf8Fixture('grid/spacer-col/last-child.html')),
+            [],
+            'should not complain when the spacer column is the last column in the row.'
+        );
+        test.deepEqual(lintHtml(utf8Fixture('grid/spacer-col/tricky-classes.html')),
+            ['Using empty spacer columns isn\'t necessary with Bootstrap\'s grid. So instead of having an empty grid column with `class="col-xs-11"` , just add `class="col-xs-offset-11"` to the next grid column.'],
+            'should process classes named similar to grid column classes correctly.'
+        );
+        test.deepEqual(lintHtml(utf8Fixture('grid/spacer-col/multiple-reversed-order.html')),
+            ['Using empty spacer columns isn\'t necessary with Bootstrap\'s grid. So instead of having an empty grid column with `class="col-xs-11 col-sm-8 col-md-6 col-lg-5"` , just add `class="col-xs-offset-11 col-sm-offset-8 col-md-offset-6 col-lg-offset-5"` to the next grid column.'],
+            'should sort the grid classes in its message and handle multiple grid classes correctly.'
         );
         test.done();
     },
@@ -466,7 +523,7 @@ exports.bootlint = {
             'should not complain when Glyphicon is used correctly.'
         );
         test.deepEqual(lintHtml(utf8Fixture('glyphicons/missing-glyphicon-class.html')),
-            ["Found elements with a .glyphicon-* class that were missing the additional required .glyphicon class."],
+            ["Found elements with a `.glyphicon-*` class that were missing the additional required `.glyphicon` class."],
             'should complain when .glyphicon-* class is used without the .glyphicon class.'
         );
         test.done();
@@ -479,28 +536,79 @@ exports.bootlint = {
             'should not complain when modal markup structure is correct.'
         );
         test.deepEqual(lintHtml(utf8Fixture('modal/dialog-outside-modal.html')),
-            [".modal-dialog must be a child of .modal"],
+            ["`.modal-dialog` must be a child of `.modal`"],
             'should complain when modal dialog not within modal.'
         );
         test.deepEqual(lintHtml(utf8Fixture('modal/content-outside-dialog.html')),
-            [".modal-content must be a child of .modal-dialog"],
+            ["`.modal-content` must be a child of `.modal-dialog`"],
             'should complain when modal content not within modal dialog.'
         );
         test.deepEqual(lintHtml(utf8Fixture('modal/header-outside-content.html')),
-            [".modal-header must be a child of .modal-content"],
+            ["`.modal-header` must be a child of `.modal-content`"],
             'should complain when modal header not within modal content'
         );
         test.deepEqual(lintHtml(utf8Fixture('modal/body-outside-content.html')),
-            [".modal-body must be a child of .modal-content"],
+            ["`.modal-body` must be a child of `.modal-content`"],
             'should complain when modal body not within modal content.'
         );
         test.deepEqual(lintHtml(utf8Fixture('modal/footer-outside-content.html')),
-            [".modal-footer must be a child of .modal-content"],
+            ["`.modal-footer` must be a child of `.modal-content`"],
             'should complain when modal footer not within modal content.'
         );
         test.deepEqual(lintHtml(utf8Fixture('modal/title-outside-header.html')),
-            [".modal-title must be a child of .modal-header"],
+            ["`.modal-title` must be a child of `.modal-header`"],
             'should complain when modal title is not within modal header.'
+        );
+        test.done();
+    },
+
+    'form classes used directly on form groups': function (test) {
+        test.expect(2);
+        test.deepEqual(lintHtml(utf8Fixture('form/form-inline-group.html')),
+            ["Neither `.form-inline` nor `.form-horizontal` should be used directly on a `.form-group`. Instead, nest the `.form-group` within the `.form-inline` or `.form-horizontal`"],
+            'should complain about form-group having .form-inline'
+        );
+        test.deepEqual(lintHtml(utf8Fixture('form/form-horizontal-group.html')),
+            ["Neither `.form-inline` nor `.form-horizontal` should be used directly on a `.form-group`. Instead, nest the `.form-group` within the `.form-inline` or `.form-horizontal`"],
+            'should complain about form-group having .form-horizontal'
+        );
+        test.done();
+    },
+
+    'incorrect alerts with dismiss/close buttons': function (test) {
+        test.expect(5);
+        test.deepEqual(lintHtml(utf8Fixture('alert-dismiss-close/valid.html')),
+            [],
+            'should not complain when dismissible alert markup structure is correct.'
+        );
+        test.deepEqual(lintHtml(utf8Fixture('alert-dismiss-close/close-preceded-by-nothing.html')),
+            [],
+            'should not complain when close button is preceded by nothing.'
+        );
+        test.deepEqual(lintHtml(utf8Fixture('alert-dismiss-close/missing-alert-dismissible.html')),
+            ['`.alert` with dismiss button must have class `.alert-dismissible`'],
+            'should complain when alert with dismiss button is missing .alert-dismissible class.'
+        );
+        test.deepEqual(lintHtml(utf8Fixture('alert-dismiss-close/close-preceded-by-text.html')),
+            ['`.close` button for `.alert` must be the first element in the `.alert`'],
+            'should complain when alert close button is not first child in alert.'
+        );
+        test.deepEqual(lintHtml(utf8Fixture('alert-dismiss-close/close-preceded-by-elem.html')),
+            ['`.close` button for `.alert` must be the first element in the `.alert`'],
+            'should complain when alert close button is not first child in alert.'
+        );
+        test.done();
+    },
+
+    'pull classes inside media': function (test) {
+        test.expect(2);
+        test.deepEqual(lintHtml(utf8Fixture('media/pull-classes.html')),
+            ['Using `.pull-left` or `.pull-right` as part of the media object component is deprecated as of Bootstrap v3.3.0. Use `.media-left` or `.media-right` instead.'],
+            'should complain about .pull-* classes in .media'
+        );
+        test.deepEqual(lintHtml(utf8Fixture('media/media-classes.html')),
+            [],
+            'should not complain about .media-left or .media-right classes'
         );
         test.done();
     }
